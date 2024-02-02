@@ -1,0 +1,4 @@
+numpy
+pysdl2
+pysdl2-dll
+PyOpenGL
