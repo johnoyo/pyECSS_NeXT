@@ -73,7 +73,9 @@ class Registry(object):
     def get_systems(cls):
         return cls.instance.systems
     
-    def start(cls):        
+    def start(cls):
+        Application().set_is_running(True)
+        
         for system in Registry().get_systems():
             system.on_create_base()
 

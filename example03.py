@@ -1,4 +1,4 @@
-from ECS.BuiltInComponents import TransformComponent, LinkComponent, TagComponent, RenderComponent
+from ECS.BuiltInComponents import TransformComponent, LinkComponent, InfoComponent, RenderComponent, MaterialComponent
 from ECS.BuiltInSystems import TransformSystem, LinkSystem, RenderingSystem
 from ECS.System import System
 from ECS.Entity import Entity
@@ -6,13 +6,18 @@ from ECS.Registry import Registry
 from ECS.Renderer import Renderer
 from ECS.Application import Application
 
+from ECS.Utilities.MaterialLib import MaterialLib, MaterialData
+from ECS.Utilities.ShaderLib import ShaderLib
+
 from ECS import Math as utils
+
+import numpy as np
 
 import sdl2
 import sdl2.ext
 
 """
-Showcase of runtime creation of system
+Showcase of user defined system and component and runtime addition of components
 """
 
 class GravityComponent:
@@ -46,42 +51,87 @@ def main():
     entity3 = Registry().enroll_entity()
     entity4 = Registry().enroll_entity()
 
-    # Register components to entity1
-    Registry().add_component(entity1, TagComponent("e1"))
-    Registry().add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity1, LinkComponent(None))
-    Registry().add_component(entity1, RenderComponent(utils.vec(1,1,1,1)))
+    vertex_shader_code = """
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
 
-    # Register components to entity2
-    Registry().add_component(entity2, TagComponent("e2"))
-    Registry().add_component(entity2, TransformComponent(utils.vec(-1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity2, LinkComponent(entity1))
-    Registry().add_component(entity2, RenderComponent(utils.vec(1,0,0,1)))
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
 
-    # Register components to entity3
-    Registry().add_component(entity3, TagComponent("e3"))
-    Registry().add_component(entity3, TransformComponent(utils.vec(-0.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity3, LinkComponent(entity2))
-    Registry().add_component(entity3, RenderComponent(utils.vec(0,0,1,1)))
-    Registry().add_component(entity3, GravityComponent(5))
+    void main()
+    {
+        gl_Position = vec4(aPos, 1.0) * model * view * projection;
+    }
+    """
 
-    # Register components to entity4
-    Registry().add_component(entity4, TagComponent("e4"))
-    Registry().add_component(entity4, TransformComponent(utils.vec(1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity4, LinkComponent(entity1))
-    Registry().add_component(entity4, RenderComponent(utils.vec(0,1,0,1)))
-    Registry().add_component(entity4, GravityComponent(5))
+    fragment_shader_code_red = """
+    #version 330 core
+    out vec4 FragColor;
 
-    # Create Register systems
-    Registry().register_system(TransformSystem([TransformComponent]))
-    Registry().register_system(LinkSystem([LinkComponent, TransformComponent]))
-    Registry().register_system(RenderingSystem([RenderComponent, TransformComponent]))
+    uniform vec4 u_Color;
+
+    void main()
+    {
+        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+    """
 
     Application().create('Hello World', 1280, 720, True)
 
     Renderer().initialize()
 
-    # Initialize systems
+    ShaderLib().build('default_colored_red', vertex_shader_code, fragment_shader_code_red)
+    MaterialLib().build('M_Red', MaterialData('default_colored_red', []))
+
+    vertices = np.array([
+        [-0.5, -0.5, 0.0], #0
+        [ 0.5, -0.5, 0.0], #1
+        [ 0.5,  0.5, 0.0], #2
+        [-0.5,  0.5, 0.0]  #3
+    ], dtype=np.float32)
+
+    indices = np.array([
+        [0, 1, 2],
+        [2, 3, 0]
+    ], dtype=np.uint32)
+
+    # Register components to entity1
+    Registry().add_component(entity1, InfoComponent("e1"))
+    Registry().add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity1, LinkComponent(None))
+    Registry().add_component(entity1, RenderComponent([vertices], indices))
+    Registry().add_component(entity1, MaterialComponent('M_Red'))
+
+    # Register components to entity2
+    Registry().add_component(entity2, InfoComponent("e2"))
+    Registry().add_component(entity2, TransformComponent(utils.vec(-1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity2, LinkComponent(entity1))
+    Registry().add_component(entity2, RenderComponent([vertices], indices))
+    Registry().add_component(entity2, MaterialComponent('M_Red'))
+
+    # Register components to entity3
+    Registry().add_component(entity3, InfoComponent("e3"))
+    Registry().add_component(entity3, TransformComponent(utils.vec(-0.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity3, LinkComponent(entity2))
+    Registry().add_component(entity3, RenderComponent([vertices], indices))
+    Registry().add_component(entity3, MaterialComponent('M_Red'))
+    Registry().add_component(entity3, GravityComponent(5))
+
+    # Register components to entity4
+    Registry().add_component(entity4, InfoComponent("e4"))
+    Registry().add_component(entity4, TransformComponent(utils.vec(1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity4, LinkComponent(entity1))
+    Registry().add_component(entity4, RenderComponent([vertices], indices))
+    Registry().add_component(entity4, MaterialComponent('M_Red'))
+    Registry().add_component(entity4, GravityComponent(5))
+
+    # Create Register systems
+    Registry().register_system(TransformSystem([TransformComponent]))
+    Registry().register_system(LinkSystem([LinkComponent, TransformComponent]))
+    Registry().register_system(RenderingSystem([RenderComponent, MaterialComponent, TransformComponent]))
+
+    # Initialize system2
     Registry().start()
 
     selected_entity: Entity = entity4

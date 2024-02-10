@@ -7,13 +7,16 @@ from ECS.Application import Application
 
 from ECS.Utilities.MaterialLib import MaterialLib, MaterialData
 from ECS.Utilities.ShaderLib import ShaderLib
+from ECS.Utilities.TextureLib import TextureLib
 
 from ECS import Math as utils
 
-import numpy as np
-
 import sdl2
 import sdl2.ext
+
+import OpenGL.GL as gl
+
+import numpy as np
 
 """
 Showcase of basic usage and API
@@ -41,6 +44,27 @@ def main():
     }
     """
 
+    textured_vertex_shader_code = """
+    #version 330 core
+    layout(location = 0) in vec3 a_Pos;
+    layout(location = 1) in vec2 a_TexCoord;
+    layout(location = 2) in float a_TexId;
+
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
+    out vec2 v_TexCoord;
+    out float v_TexId;
+
+    void main()
+    {
+        v_TexCoord = a_TexCoord;
+        v_TexId = a_TexId;
+        gl_Position = vec4(a_Pos, 1.0) * model * view * projection;
+    }
+    """
+
     fragment_shader_code_red = """
     #version 330 core
     out vec4 FragColor;
@@ -53,18 +77,97 @@ def main():
     }
     """
 
+    fragment_shader_code_blue = """
+    #version 330 core
+    out vec4 FragColor;
+
+    uniform vec4 u_Color;
+
+    void main()
+    {
+        FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+    }
+    """
+
+    textured_fragment_shader_code_blue = """
+    #version 330 core
+    out vec4 FragColor;
+
+    uniform vec4 u_Color;
+    uniform sampler2D u_Textures[32];
+
+    in vec2 v_TexCoord;
+    in float v_TexId;
+
+    void main()
+    {
+        int id = int(v_TexId);
+        FragColor = texture(u_Textures[id], v_TexCoord) * vec4(0.0, 0.0, 1.0, 0.0);
+    }
+    """
+
+    textured_fragment_shader_code_red = """
+    #version 330 core
+    out vec4 FragColor;
+
+    uniform vec4 u_Color;
+    uniform sampler2D u_Textures[32];
+
+    in vec2 v_TexCoord;
+    in float v_TexId;
+
+    void main()
+    {
+        int id = int(v_TexId);
+        FragColor = texture(u_Textures[id], v_TexCoord) * vec4(1.0, 0.0, 0.0, 0.0);
+    }
+    """
+
     Application().create('Hello World', 1280, 720, True)
 
     Renderer().initialize()
 
+    # Build textures
+    d = TextureLib().build('dark_wood', 'dark_wood_texture.jpg')
+    u = TextureLib().build('uoc_logo', 'uoc_logo.png')
+    w = TextureLib().build('white_texture', None, [0xffffffff.to_bytes(4, byteorder='big'), 1, 1])
+
+    # Build shaders 
     ShaderLib().build('default_colored_red', vertex_shader_code, fragment_shader_code_red)
-    MaterialLib().build('M_Red', MaterialData('default_colored_red', []))
+    ShaderLib().build('textured_colored_blue', textured_vertex_shader_code, textured_fragment_shader_code_blue)
+    ShaderLib().build('textured_colored_red', textured_vertex_shader_code, textured_fragment_shader_code_red)
+    
+    # Build Materials
+    MaterialLib().build('M_Red_Simple', MaterialData('default_colored_red', []))
+    MaterialLib().build('M_Red_Textured', MaterialData('textured_colored_red', []))
+    MaterialLib().build('M_Blue', MaterialData('textured_colored_blue', []))
 
     vertices = np.array([
         [-0.5, -0.5, 0.0], #0
         [ 0.5, -0.5, 0.0], #1
         [ 0.5,  0.5, 0.0], #2
         [-0.5,  0.5, 0.0]  #3
+    ], dtype=np.float32)
+
+    texture_coords = np.array([
+        [0.0, 1.0], #0
+        [1.0, 1.0], #1
+        [1.0, 0.0], #2
+        [0.0, 0.0]  #3
+    ], dtype=np.float32)
+
+    texture_ids = np.array([
+        [d], #0
+        [d], #1
+        [d], #2
+        [d]  #3
+    ], dtype=np.float32)
+
+    texture_ids_alt = np.array([
+        [u], #0
+        [u], #1
+        [u], #2
+        [u]  #3
     ], dtype=np.float32)
 
     indices = np.array([
@@ -76,29 +179,20 @@ def main():
     Registry().add_component(entity1, InfoComponent("e1"))
     Registry().add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
     Registry().add_component(entity1, LinkComponent(None))
-    Registry().add_component(entity1, RenderComponent([vertices], indices))
-    Registry().add_component(entity1, MaterialComponent('M_Red'))
+    Registry().add_component(entity1, RenderComponent([vertices, texture_coords, texture_ids], indices))
+    Registry().add_component(entity1, MaterialComponent('M_Red_Textured'))
 
-    # Register components to entity2
     Registry().add_component(entity2, InfoComponent("e2"))
-    Registry().add_component(entity2, TransformComponent(utils.vec(-1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity2, TransformComponent(utils.vec(2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
     Registry().add_component(entity2, LinkComponent(entity1))
     Registry().add_component(entity2, RenderComponent([vertices], indices))
-    Registry().add_component(entity2, MaterialComponent('M_Red'))
+    Registry().add_component(entity2, MaterialComponent('M_Red_Simple'))
 
-    # Register components to entity3
     Registry().add_component(entity3, InfoComponent("e3"))
-    Registry().add_component(entity3, TransformComponent(utils.vec(-0.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity3, LinkComponent(entity2))
-    Registry().add_component(entity3, RenderComponent([vertices], indices))
-    Registry().add_component(entity3, MaterialComponent('M_Red'))
-
-    # Register components to entity4
-    Registry().add_component(entity4, InfoComponent("e4"))
-    Registry().add_component(entity4, TransformComponent(utils.vec(1.5, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity4, LinkComponent(entity1))
-    Registry().add_component(entity4, RenderComponent([vertices], indices))
-    Registry().add_component(entity4, MaterialComponent('M_Red'))
+    Registry().add_component(entity3, TransformComponent(utils.vec(-2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    Registry().add_component(entity3, LinkComponent(entity1))
+    Registry().add_component(entity3, RenderComponent([vertices, texture_coords, texture_ids_alt], indices))
+    Registry().add_component(entity3, MaterialComponent('M_Blue'))
 
     # Create Register systems
     Registry().register_system(TransformSystem([TransformComponent]))

@@ -1,4 +1,5 @@
 from ECS.Application import Application
+from ECS.Utilities.TextureLib import TextureLib
 from ECS.Math import *
 
 import sdl2
@@ -10,14 +11,18 @@ class Renderer(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Renderer, cls).__new__(cls)
-            cls.instance.vbo = 0
+            cls.instance.vbo = []
             cls.instance.ebo = 0
             cls.instance.vao = 0
-            cls.instance.shader_program = 0
-            cls.instance.vertices = []
-            cls.instance.indices = []
+            cls.instance.initialized = False
         return cls.instance
     
+    def set_initialized(cls, initialised):
+        cls.instance.initialized = initialised
+
+    def is_initialized(cls):
+        return cls.instance.initialized
+
     def compile_shader(cls, source, shader_type):
         shader = gl.glCreateShader(shader_type)
         gl.glShaderSource(shader, source)
@@ -46,91 +51,49 @@ class Renderer(object):
         return shader_program
     
     def initialize(cls):
-        # Vertex data for the cube
-        cls.instance.vertices = [
-            -0.5, -0.5, 0.0, #0
-             0.5, -0.5, 0.0, #1
-             0.5,  0.5, 0.0, #2
-            -0.5,  0.5, 0.0 #3
-        ]
-
-        # Convert the vertices list to a NumPy array
-        vertices_array = np.array(cls.instance.vertices, dtype=np.float32)
-
-        # Get a pointer to the NumPy array data
-        vertices_pointer = vertices_array.ctypes.data_as(ctypes.POINTER(gl.GLfloat))
-
-        # Indices to form the cube faces
-        cls.instance.indices = [
-            0, 1, 2,
-            2, 3, 0
-        ]
-
-        # Convert the indices list to a NumPy array
-        indices_array = np.array(cls.instance.indices, dtype=np.uint32)
-
-        # Get a pointer to the NumPy array data
-        indices_pointer = indices_array.ctypes.data_as(ctypes.POINTER(gl.GLuint))
-
-        # Shader programs
-        vertex_shader_code = """
-        #version 330 core
-        layout(location = 0) in vec3 aPos;
-        uniform mat4 model;
-        uniform mat4 view;
-        uniform mat4 projection;
-
-        void main()
-        {
-            gl_Position = vec4(aPos, 1.0) * model * view * projection;
-        }
-        """
-
-        fragment_shader_code = """
-        #version 330 core
-        out vec4 FragColor;
-
-        uniform vec4 u_Color;
-
-        void main()
-        {
-            FragColor = u_Color;
-        }
-        """
-
         # Initialize OpenGL
         gl.glEnable(gl.GL_DEPTH_TEST)
 
-        # Compile and link shaders
-        cls.instance.shader_program = cls.instance.create_shader_program(vertex_shader_code, fragment_shader_code)
-
+    def add_batch(cls, render_data, material):
         # Vertex Array Object (VAO)
-        cls.instance.vao = gl.glGenVertexArrays(1)
-        gl.glBindVertexArray(cls.instance.vao)
+        render_data.vao = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(render_data.vao)
 
-        # Vertex Buffer Object (VBO) and Element Buffer Object (EBO)
-        cls.instance.vbo = gl.glGenBuffers(1)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, cls.instance.vbo)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, len(cls.instance.vertices) * 4, vertices_pointer, gl.GL_STATIC_DRAW)
+        for index, attribute in enumerate(render_data.attributes):
+            # Get a pointer to the NumPy array data
+            attribute_pointer = attribute.ctypes.data_as(ctypes.POINTER(gl.GLfloat))
 
-        gl.glEnableVertexAttribArray(0)
-        gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 3 * 4, ctypes.c_void_p(0))
+            # Vertex Buffer Object (VBO)
+            render_data.vbo.append(gl.glGenBuffers(1))
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, render_data.vbo[-1])
+            gl.glBufferData(gl.GL_ARRAY_BUFFER, len(attribute) * len(attribute[0]) * 4, attribute_pointer, gl.GL_STATIC_DRAW)
+
+            gl.glEnableVertexAttribArray(0)
+            gl.glVertexAttribPointer(index, len(attribute[0]), gl.GL_FLOAT, gl.GL_FALSE, len(attribute[0]) * 4, ctypes.c_void_p(0))
+
+        # Get a pointer to the NumPy array data
+        indices_pointer = render_data.indices.ctypes.data_as(ctypes.POINTER(gl.GLuint))
         
-        cls.instance.ebo = gl.glGenBuffers(1)
-        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, cls.instance.ebo)
-        gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(cls.instance.indices) * 4, indices_pointer, gl.GL_STATIC_DRAW)
+        # Element Buffer Object (EBO)
+        render_data.ebo = gl.glGenBuffers(1)
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, render_data.ebo)
+        gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(render_data.indices) * 3 * 4, indices_pointer, gl.GL_STATIC_DRAW)
 
         # Use the shader program
-        gl.glUseProgram(cls.instance.shader_program)
+        gl.glUseProgram(material.instance.shader_program)
 
-        # Set up matrices for projection and view
-        projection = perspective(45.0, 1920 / 1080, 0.1, 100.0)
-        view = translate(0.0, 0.0, -5.0)
-        model = identity()
+        # Create samplers if texture is in use
+        texture_uniform_location = gl.glGetUniformLocation(material.instance.shader_program, "u_Textures")
+        if texture_uniform_location != -1:
+            samplers = []
+            for i in range(0, 32):
+                samplers.append(i)
 
-        gl.glUniformMatrix4fv(gl.glGetUniformLocation(cls.instance.shader_program, "projection"), 1, gl.GL_FALSE, projection)
-        gl.glUniformMatrix4fv(gl.glGetUniformLocation(cls.instance.shader_program, "view"), 1, gl.GL_FALSE, view)
-        gl.glUniformMatrix4fv(gl.glGetUniformLocation(cls.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
+            gl.glUniform1iv(texture_uniform_location, 32, np.array(samplers, dtype=np.int32))
+        else:
+            print(f'Could find u_Textures uniform for material: {material.name}!')
+
+        return 0
 
     def begin_frame(cls):
         gl.glClearColor(0.8, 0.5, 0.3, 1.0)
@@ -139,15 +102,42 @@ class Renderer(object):
     def end_frame(cls):
         sdl2.SDL_GL_SwapWindow(Application().get_window())
 
-    def draw(cls, model, color):
-        gl.glUniformMatrix4fv(gl.glGetUniformLocation(cls.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
-        gl.glUniform4f(gl.glGetUniformLocation(cls.instance.shader_program, "u_Color"), color[0], color[1], color[2], color[3])
-        gl.glBindVertexArray(cls.instance.vao)
-        gl.glDrawElements(gl.GL_TRIANGLES, len(cls.instance.indices), gl.GL_UNSIGNED_INT, None)
+    def draw(cls, model, render_data, material):
+        # Bind shader program
+        gl.glUseProgram(material.instance.shader_program)
+        
+        # Bind textures
+        TextureLib().bind_textures()
+
+        # Set Uniforms
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
+        gl.glUniform4f(gl.glGetUniformLocation(material.instance.shader_program, "u_Color"), 1.0, 0.0, 0.0, 1.0)
+
+        # Bind vao
+        gl.glBindVertexArray(render_data.vao)
+
+        # Bind vertex buffer and their layout
+        for index, attribute in enumerate(render_data.attributes):
+            # Vertex Buffer Object (VBO)
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, render_data.vbo[index])
+
+            # Set vertex buffer layout
+            gl.glEnableVertexAttribArray(index)
+            gl.glVertexAttribPointer(index, len(attribute[0]), gl.GL_FLOAT, gl.GL_FALSE, len(attribute[0]) * 4, ctypes.c_void_p(0))
+
+        gl.glDrawElements(gl.GL_TRIANGLES, len(render_data.indices) * 3, gl.GL_UNSIGNED_INT, None)
+
+        # Unbind vao
+        gl.glBindVertexArray(0)
+
+        # Unbind textures
+        TextureLib().unbind_textures()
+
+        # Unbind shader program
+        gl.glUseProgram(0)
 
     def clean(cls):
         gl.glDeleteVertexArrays(1, (cls.instance.vao,))
-        gl.glDeleteBuffers(1, (cls.instance.vbo,))
+        gl.glDeleteBuffers(len(cls.instance.vbo), cls.instance.vbo)
         gl.glDeleteBuffers(1, (cls.instance.ebo,))
-        gl.glDeleteProgram(cls.instance.shader_program)
 

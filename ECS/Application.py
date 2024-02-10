@@ -20,6 +20,9 @@ class Application(object):
     def is_running(cls):
         return cls.instance.is_application_running
     
+    def set_is_running(cls, is_running):
+        cls.instance.is_application_running = is_running
+    
     def create(cls, title, width, height, vsync = True):
         sdl_not_initialised = sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_TIMER)
         if sdl_not_initialised !=0:
@@ -55,8 +58,6 @@ class Application(object):
         #obtain the GL versioning system info
         gVersionLabel = f'OpenGL {gl.glGetString(gl.GL_VERSION).decode()} GLSL {gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION).decode()} Renderer {gl.glGetString(gl.GL_RENDERER).decode()}'
         print(gVersionLabel)
-
-        cls.instance.is_application_running = True
 
     def quit(cls):
         cls.instance.is_application_running = False

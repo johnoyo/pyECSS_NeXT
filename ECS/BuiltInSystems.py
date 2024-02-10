@@ -2,10 +2,13 @@ from ECS.System import System
 from ECS.Entity import Entity
 from ECS.Registry import Registry
 from ECS.Renderer import Renderer
+from ECS.Utilities.MaterialLib import MaterialLib
 
 from ECS.BuiltInComponents import TransformComponent, LinkComponent
 
 from ECS.Math import *
+
+import OpenGL.GL as gl
 
 class TransformSystem(System):
     """
@@ -82,11 +85,24 @@ class RenderingSystem(System):
         """
         Gets called once in the first frame for every entity that the system operates on.
         """
-        render, transform = components
+        render_data, material, transform = components
+
+        material.instance = MaterialLib().get(material.name)
+
+        render_data.batch = Renderer().add_batch(render_data, material)
+
+        # Set up matrices for projection and view
+        projection = perspective(45.0, 1920 / 1080, 0.1, 100.0)
+        view = translate(0.0, 0.0, -5.0)
+        model = identity()
+
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "projection"), 1, gl.GL_FALSE, projection)
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "view"), 1, gl.GL_FALSE, view)
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
 
     def on_update(self, entity: Entity, components):
         """
         Gets called every frame for every entity that the system operates on.
         """
-        render, transform = components
-        Renderer().draw(transform.world_matrix, render.color)
+        render_data, material, transform = components
+        Renderer().draw(transform.world_matrix, render_data, material)
