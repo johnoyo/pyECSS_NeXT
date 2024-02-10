@@ -113,6 +113,13 @@ class Renderer(object):
         gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
         gl.glUniform4f(gl.glGetUniformLocation(material.instance.shader_program, "u_Color"), 1.0, 0.0, 0.0, 1.0)
 
+        if len(material.instance.textures) > 0:
+            texture_id_uniform_location = gl.glGetUniformLocation(material.instance.shader_program, "u_TextureId")
+            if texture_id_uniform_location != -1:
+                gl.glUniform1f(texture_id_uniform_location, TextureLib().get_slot(material.instance.textures[0]))
+            else:
+                print(f'Could find u_TextureId uniform for material: {material.name}!')
+
         # Bind vao
         gl.glBindVertexArray(render_data.vao)
 
