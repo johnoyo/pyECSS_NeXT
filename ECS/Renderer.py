@@ -71,13 +71,14 @@ class Renderer(object):
             gl.glEnableVertexAttribArray(0)
             gl.glVertexAttribPointer(index, len(attribute[0]), gl.GL_FLOAT, gl.GL_FALSE, len(attribute[0]) * 4, ctypes.c_void_p(0))
 
-        # Get a pointer to the NumPy array data
-        indices_pointer = render_data.indices.ctypes.data_as(ctypes.POINTER(gl.GLuint))
-        
-        # Element Buffer Object (EBO)
-        render_data.ebo = gl.glGenBuffers(1)
-        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, render_data.ebo)
-        gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(render_data.indices) * 3 * 4, indices_pointer, gl.GL_STATIC_DRAW)
+        if render_data.indices is not None:
+            # Get a pointer to the NumPy array data
+            indices_pointer = render_data.indices.ctypes.data_as(ctypes.POINTER(gl.GLuint))
+            
+            # Element Buffer Object (EBO)
+            render_data.ebo = gl.glGenBuffers(1)
+            gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, render_data.ebo)
+            gl.glBufferData(gl.GL_ELEMENT_ARRAY_BUFFER, len(render_data.indices) * 3 * 4, indices_pointer, gl.GL_STATIC_DRAW)
 
         # Use the shader program
         gl.glUseProgram(material.instance.shader_program)
@@ -101,7 +102,7 @@ class Renderer(object):
 
     def end_frame(cls):
         sdl2.SDL_GL_SwapWindow(Application().get_window())
-
+    
     def draw(cls, model, render_data, material):
         # Bind shader program
         gl.glUseProgram(material.instance.shader_program)
@@ -132,10 +133,54 @@ class Renderer(object):
             gl.glEnableVertexAttribArray(index)
             gl.glVertexAttribPointer(index, len(attribute[0]), gl.GL_FLOAT, gl.GL_FALSE, len(attribute[0]) * 4, ctypes.c_void_p(0))
 
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, len(render_data.attributes[0]) * 3)
+
+        # Unbind vao
+        gl.glBindVertexArray(0)
+
+        # Unbind textures
+        TextureLib().unbind_textures()
+
+        # Unbind shader program
+        gl.glUseProgram(0)
+
+    def draw_indexed(cls, model, render_data, material):
+        # Bind shader program
+        gl.glUseProgram(material.instance.shader_program)
+        
+        # Bind textures
+        TextureLib().bind_textures()
+
+        # Set Uniforms
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
+        gl.glUniform4f(gl.glGetUniformLocation(material.instance.shader_program, "u_Color"), 1.0, 0.0, 0.0, 1.0)
+
+        if len(material.instance.textures) > 0:
+            texture_id_uniform_location = gl.glGetUniformLocation(material.instance.shader_program, "u_TextureId")
+            if texture_id_uniform_location != -1:
+                gl.glUniform1f(texture_id_uniform_location, TextureLib().get_slot(material.instance.textures[0]))
+            else:
+                print(f'Could find u_TextureId uniform for material: {material.name}!')
+
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, render_data.ebo)
+
+        # Bind vao
+        gl.glBindVertexArray(render_data.vao)
+
+        # Bind vertex buffer and their layout
+        for index, attribute in enumerate(render_data.attributes):
+            # Vertex Buffer Object (VBO)
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, render_data.vbo[index])
+
+            # Set vertex buffer layout
+            gl.glEnableVertexAttribArray(index)
+            gl.glVertexAttribPointer(index, len(attribute[0]), gl.GL_FLOAT, gl.GL_FALSE, len(attribute[0]) * 4, ctypes.c_void_p(0))
+
         gl.glDrawElements(gl.GL_TRIANGLES, len(render_data.indices) * 3, gl.GL_UNSIGNED_INT, None)
 
         # Unbind vao
         gl.glBindVertexArray(0)
+        gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, 0)
 
         # Unbind textures
         TextureLib().unbind_textures()

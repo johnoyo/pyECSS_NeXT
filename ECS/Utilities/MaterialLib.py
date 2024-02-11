@@ -1,5 +1,4 @@
 from ECS.Utilities.ShaderLib import ShaderLib
-from ECS.Utilities.TextureLib import TextureLib
 
 class MaterialInstance:
     def __init__(self, shader_program, textures, shader_params = []):
@@ -34,22 +33,15 @@ class MaterialLib(object):
         return cls.instance
     
     def build(cls, name: str, data: MaterialData):
-        print('build')
         if cls.instance.cached_materials.get(data) != None:
-            print('cached')
             material = cls.instance.cached_materials[data]
             cls.instance.materials[name] = material
             return material
 
-        print('created')
         shader_program = ShaderLib().get(data.base_template)
 
-        textures = []
-        for texture_name in data.textures: 
-            textures.append(texture_name)
-
-        cls.instance.cached_materials[data] = MaterialInstance(shader_program, textures)
-        cls.instance.materials[name] = MaterialInstance(shader_program, textures)
+        cls.instance.cached_materials[data] = MaterialInstance(shader_program, data.textures)
+        cls.instance.materials[name] = MaterialInstance(shader_program, data.textures)
 
         return cls.instance.materials[name]
 

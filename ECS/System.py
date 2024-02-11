@@ -1,7 +1,7 @@
 from ECS.Registry import Registry
 
 class System:
-    def __init__(self, filters: []):
+    def __init__(self, filters: list[type]):
         self.filters = filters
         self.filtered_components = []
         self.filtered_entities = []

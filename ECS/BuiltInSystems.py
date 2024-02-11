@@ -105,4 +105,8 @@ class RenderingSystem(System):
         Gets called every frame for every entity that the system operates on.
         """
         render_data, material, transform = components
-        Renderer().draw(transform.world_matrix, render_data, material)
+        
+        if (render_data.indices is None):
+            Renderer().draw(transform.world_matrix, render_data, material)
+        else:
+            Renderer().draw_indexed(transform.world_matrix, render_data, material)

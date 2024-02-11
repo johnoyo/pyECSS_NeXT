@@ -19,6 +19,7 @@ class TextureLib(object):
 
         if path is not None:
             img = Image.open(path)
+            img = img.transpose(Image.FLIP_TOP_BOTTOM)
             img_bytes = img.convert("RGBA").tobytes("raw", "RGBA", 0, -1)
 
         texture_id = gl.glGenTextures(1)        
