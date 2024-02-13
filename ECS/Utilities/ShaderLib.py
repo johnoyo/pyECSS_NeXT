@@ -1,5 +1,42 @@
 import OpenGL.GL as gl
 
+class Shader:
+    def create(self):
+        pass
+
+    def bind(self):
+        pass
+
+    def unbind(self):
+        pass
+
+    def set_int_1(self):
+        pass
+
+    def set_int_ptr(self):
+        pass
+
+    def set_float_1(self):
+        pass
+
+    def set_float_2(self):
+        pass
+
+    def set_float_3(self):
+        pass
+
+    def set_float_4(self):
+        pass
+
+    def set_float_ptr(self):
+        pass
+
+    def set_mat_4(self):
+        pass
+
+    def set_buffer(self):
+        pass
+
 class ShaderLib(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):

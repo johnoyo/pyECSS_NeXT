@@ -1,7 +1,7 @@
 from ECS.System import System
 from ECS.Entity import Entity
 from ECS.Registry import Registry
-from ECS.Renderer import Renderer
+from ECS.Renderer.Renderer2D import Renderer2D
 from ECS.Utilities.MaterialLib import MaterialLib
 
 from ECS.BuiltInComponents import TransformComponent, LinkComponent
@@ -89,7 +89,7 @@ class RenderingSystem(System):
 
         material.instance = MaterialLib().get(material.name)
 
-        render_data.batch = Renderer().add_batch(render_data, material)
+        render_data.batch = Renderer2D().add_batch(render_data, material)
 
         # Set up matrices for projection and view
         projection = perspective(45.0, 1920 / 1080, 0.1, 100.0)
@@ -107,6 +107,6 @@ class RenderingSystem(System):
         render_data, material, transform = components
         
         if (render_data.indices is None):
-            Renderer().draw(transform.world_matrix, render_data, material)
+            Renderer2D().draw(transform.world_matrix, render_data, material)
         else:
-            Renderer().draw_indexed(transform.world_matrix, render_data, material)
+            Renderer2D().draw_indexed(transform.world_matrix, render_data, material)

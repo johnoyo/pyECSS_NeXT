@@ -2,7 +2,7 @@ from ECS.BuiltInComponents import TransformComponent, LinkComponent, InfoCompone
 from ECS.BuiltInSystems import TransformSystem, LinkSystem, RenderingSystem
 from ECS.Entity import Entity
 from ECS.Registry import Registry
-from ECS.Renderer import Renderer
+from ECS.Renderer.Renderer2D import Renderer2D
 from ECS.Application import Application
 
 from ECS.Utilities.MaterialLib import MaterialLib, MaterialData
@@ -122,7 +122,7 @@ def main():
 
     Application().create('Hello World', 1280, 720, True)
 
-    Renderer().initialize()
+    Renderer2D().initialize()
 
     # Build textures
     d = TextureLib().build('dark_wood', 'dark_wood_texture.jpg')
@@ -195,11 +195,11 @@ def main():
             if event.type == sdl2.SDL_QUIT:
                 Application().quit()
                 
-        Renderer().begin_frame()
+        Renderer2D().begin_frame()
         Registry().update()
-        Renderer().end_frame()
+        Renderer2D().end_frame()
 
-    Renderer().clean()
+    Renderer2D().clean()
     Application().clean()
 
 def move_selected_entity(event, selected_entity, entity1, entity2, entity3, entity4):
