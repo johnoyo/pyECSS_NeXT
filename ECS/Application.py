@@ -51,6 +51,9 @@ class Application(object):
         # Make the window's context current
         glfw.make_context_current(cls.instance.window)
 
+        # Set vsync mode
+        glfw.swap_interval(1 if vsync else 0)
+
         # Obtain the GL versioning system info
         gVersionLabel = f'OpenGL {gl.glGetString(gl.GL_VERSION).decode()} GLSL {gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION).decode()} Renderer {gl.glGetString(gl.GL_RENDERER).decode()}'
         print(gVersionLabel)
