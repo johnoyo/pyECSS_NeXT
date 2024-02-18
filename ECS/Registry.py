@@ -73,6 +73,11 @@ class Registry(object):
     def get_systems(cls):
         return cls.instance.systems
     
+    def get_system(cls, system_type: type):
+        for system in Registry().get_systems():
+            if type(system) is system_type:
+                return system
+    
     def start(cls):
         Application().set_is_running(True)
         

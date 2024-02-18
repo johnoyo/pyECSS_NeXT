@@ -1,6 +1,7 @@
 from ECS.BuiltInComponents import TransformComponent, LinkComponent, InfoComponent, RenderComponent, MaterialComponent
 from ECS.BuiltInSystems import TransformSystem, LinkSystem, RenderingSystem
 from ECS.Entity import Entity
+from ECS.System import SystemState
 from ECS.Registry import Registry
 from ECS.Renderer.Renderer2D import Renderer2D
 from ECS.Application import Application
@@ -211,6 +212,11 @@ def move_selected_entity(ts, entity1, entity2, entity3, entity4):
         selected_entity = entity3
     elif glfw.get_key(Application().get_window(), glfw.KEY_4) == glfw.PRESS:
         selected_entity = entity4
+
+    if glfw.get_key(Application().get_window(), glfw.KEY_SPACE) == glfw.PRESS:
+        Registry().get_system(RenderingSystem).set_state(SystemState.PAUSE)
+    else:
+        Registry().get_system(RenderingSystem).set_state(SystemState.PLAY)
 
     if glfw.get_key(Application().get_window(), glfw.KEY_D) == glfw.PRESS:
         Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.5 * ts

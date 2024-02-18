@@ -1,6 +1,14 @@
 import OpenGL.GL as gl
 import glfw
 
+from enum import Enum
+
+class RenderAPI(Enum):
+    NONE = 0
+    OPENGL = 1
+    WEBGPU = 2
+    RAYTRACING = 3
+
 class Application(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -26,7 +34,7 @@ class Application(object):
     def set_is_running(cls, is_running):
         cls.instance.is_application_running = is_running
     
-    def create(cls, title, width, height, vsync = True):
+    def create(cls, title, width, height, vertical_sync = True, render_api = RenderAPI.OPENGL):
         # Initialize GLFW
         if not glfw.init():
             print("GLFW could not be initialized!")
@@ -52,7 +60,7 @@ class Application(object):
         glfw.make_context_current(cls.instance.window)
 
         # Set vsync mode
-        glfw.swap_interval(1 if vsync else 0)
+        glfw.swap_interval(1 if vertical_sync else 0)
 
         # Obtain the GL versioning system info
         gVersionLabel = f'OpenGL {gl.glGetString(gl.GL_VERSION).decode()} GLSL {gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION).decode()} Renderer {gl.glGetString(gl.GL_RENDERER).decode()}'

@@ -2,6 +2,7 @@ from ECS.BuiltInComponents import TransformComponent, LinkComponent, InfoCompone
 from ECS.BuiltInSystems import TransformSystem, LinkSystem, RenderingSystem
 from ECS.System import System
 from ECS.Entity import Entity
+from ECS.System import SystemState
 from ECS.Registry import Registry
 from ECS.Renderer.Renderer2D import Renderer2D
 from ECS.Application import Application
@@ -169,6 +170,13 @@ def move_selected_entity(ts, entity1, entity2, entity3, entity4):
     if glfw.get_key(Application().get_window(), glfw.KEY_G) == glfw.PRESS and flag:
         flag = False
         Registry().register_system(GravitySystem([GravityComponent, TransformComponent]))
+
+    if glfw.get_key(Application().get_window(), glfw.KEY_SPACE) == glfw.PRESS:
+        for system in  Registry().get_systems():
+            system.set_state(SystemState.PAUSE)
+    else:
+        for system in  Registry().get_systems():
+            system.set_state(SystemState.PLAY)
 
     if glfw.get_key(Application().get_window(), glfw.KEY_D) == glfw.PRESS:
         Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.5 * ts
