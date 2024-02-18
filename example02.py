@@ -13,8 +13,7 @@ from ECS import Math as utils
 
 import numpy as np
 
-import sdl2
-import sdl2.ext
+import glfw
 
 """
 Showcase of user defined system and component and runtime addition of components
@@ -36,12 +35,12 @@ class GravitySystem(System):
         gravity, transform = components
         transform.translation[1] -= gravity.strength * 0.0001
 
-    def on_update(self, entity: Entity, components):
+    def on_update(self, ts, entity: Entity, components):
         """
         Gets called every frame for every entity that the system operates on.
         """
         gravity, transform = components
-        transform.translation[1] -= gravity.strength * 0.0001
+        transform.translation[1] -= gravity.strength * 0.1 * ts
 
 # Example Usage
 def main():
@@ -131,51 +130,49 @@ def main():
     Registry().register_system(RenderingSystem([RenderComponent, MaterialComponent, TransformComponent]))
     Registry().register_system(GravitySystem([GravityComponent, TransformComponent]))
 
-    # Initialize system2
+    # Initialize systems
     Registry().start()
 
-    selected_entity: Entity = entity4
+    # Define main loop
+    def main_loop(ts):
+        move_selected_entity(ts, entity1, entity2, entity3, entity4)
 
-    # Game loop
-    while Application().is_running():
-        events = sdl2.ext.get_events()
-        for event in events:
-            if event.type == sdl2.SDL_KEYDOWN:
-                selected_entity = move_selected_entity(event, selected_entity, entity1, entity2, entity3, entity4)
-            if event.type == sdl2.SDL_QUIT:
-                Application().quit()
-
-        # Update systems
         Renderer2D().begin_frame()
-        Registry().update()
+        Registry().update(ts)
         Renderer2D().end_frame()
+
+    # Dispatch game loop
+    Application().dispatch_main_loop(main_loop)
 
     Renderer2D().clean()
     Application().clean()
 
-def move_selected_entity(event, selected_entity, entity1, entity2, entity3, entity4):
-    if event.key.keysym.sym == sdl2.SDLK_1:
+def move_selected_entity(ts, entity1, entity2, entity3, entity4):
+    selected_entity = entity1
+
+    if glfw.get_key(Application().get_window(), glfw.KEY_ESCAPE) == glfw.PRESS:
+        Application().quit()
+
+    if glfw.get_key(Application().get_window(), glfw.KEY_1) == glfw.PRESS:
         selected_entity = entity1
-    elif event.key.keysym.sym == sdl2.SDLK_2:
+    elif glfw.get_key(Application().get_window(), glfw.KEY_2) == glfw.PRESS:
         selected_entity = entity2
-    elif event.key.keysym.sym == sdl2.SDLK_3:
+    elif glfw.get_key(Application().get_window(), glfw.KEY_3) == glfw.PRESS:
         selected_entity = entity3
-    elif event.key.keysym.sym == sdl2.SDLK_4:
+    elif glfw.get_key(Application().get_window(), glfw.KEY_4) == glfw.PRESS:
         selected_entity = entity4
 
-    if event.key.keysym.sym == sdl2.SDLK_d:
-        Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.025
-    elif event.key.keysym.sym == sdl2.SDLK_a:
-        Registry().get_component(selected_entity, TransformComponent).translation[0] -= 0.025
-    if event.key.keysym.sym == sdl2.SDLK_w:
-        Registry().get_component(selected_entity, TransformComponent).translation[1] += 0.025
-    elif event.key.keysym.sym == sdl2.SDLK_s:
-        Registry().get_component(selected_entity, TransformComponent).translation[1] -= 0.025
-
-    if event.key.keysym.sym == sdl2.SDLK_g:
+    if glfw.get_key(Application().get_window(), glfw.KEY_G) == glfw.PRESS:
         Registry().add_component(selected_entity, GravityComponent(5))
 
-    return selected_entity
+    if glfw.get_key(Application().get_window(), glfw.KEY_D) == glfw.PRESS:
+        Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.5 * ts
+    elif glfw.get_key(Application().get_window(), glfw.KEY_A) == glfw.PRESS:
+        Registry().get_component(selected_entity, TransformComponent).translation[0] -= 0.5 * ts
+    if glfw.get_key(Application().get_window(), glfw.KEY_W) == glfw.PRESS:
+        Registry().get_component(selected_entity, TransformComponent).translation[1] += 0.5 * ts
+    elif glfw.get_key(Application().get_window(), glfw.KEY_S) == glfw.PRESS:
+        Registry().get_component(selected_entity, TransformComponent).translation[1] -= 0.5 * ts
 
 if __name__ == "__main__":
     main()

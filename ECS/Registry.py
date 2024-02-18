@@ -79,6 +79,6 @@ class Registry(object):
         for system in Registry().get_systems():
             system.on_create_base()
 
-    def update(cls):
+    def update(cls, ts):
         for system in Registry().get_systems():
-            system.on_update_base()
+            system.on_update_base(ts)

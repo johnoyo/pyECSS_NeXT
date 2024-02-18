@@ -27,7 +27,7 @@ class TransformSystem(System):
         
         transform.local_matrix = S @ R @ T
 
-    def on_update(self, entity: Entity, components):
+    def on_update(self, ts, entity: Entity, components):
         """
         Gets called every frame for every entity that the system operates on.
         """
@@ -59,7 +59,7 @@ class LinkSystem(System):
         link, transform = components
         transform.world_matrix = self.get_world_space_transform(entity, link)
 
-    def on_update(self, entity: Entity, components):
+    def on_update(self, ts, entity: Entity, components):
         """
         Gets called every frame for every entity that the system operates on.
         """
@@ -100,7 +100,7 @@ class RenderingSystem(System):
         gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "view"), 1, gl.GL_FALSE, view)
         gl.glUniformMatrix4fv(gl.glGetUniformLocation(material.instance.shader_program, "model"), 1, gl.GL_FALSE, model)
 
-    def on_update(self, entity: Entity, components):
+    def on_update(self, ts, entity: Entity, components):
         """
         Gets called every frame for every entity that the system operates on.
         """

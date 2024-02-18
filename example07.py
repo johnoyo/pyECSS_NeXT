@@ -122,9 +122,9 @@ def main():
     Renderer2D().initialize()
 
     # Build textures
-    d = TextureLib().build('dark_wood', 'dark_wood_texture.jpg')
-    u = TextureLib().build('uoc_logo', 'uoc_logo.png')
-    w = TextureLib().build('white_texture', None, [0xffffffff.to_bytes(4, byteorder='big'), 1, 1])
+    TextureLib().build('dark_wood', 'dark_wood_texture.jpg')
+    TextureLib().build('uoc_logo', 'uoc_logo.png')
+    TextureLib().build('white_texture', None, [0xffffffff.to_bytes(4, byteorder='big'), 1, 1])
 
     # Build shaders 
     ShaderLib().build('default_colored_red', vertex_shader_code, fragment_shader_code_red)
@@ -140,38 +140,39 @@ def main():
         [-0.5, -0.5, 0.0], #0
         [ 0.5, -0.5, 0.0], #1
         [ 0.5,  0.5, 0.0], #2
-        [-0.5,  0.5, 0.0]  #3
+        [ 0.5,  0.5, 0.0], #2
+        [-0.5,  0.5, 0.0], #3
+        [-0.5, -0.5, 0.0]  #0
     ], dtype=np.float32)
 
     texture_coords = np.array([
         [0.0, 1.0], #0
         [1.0, 1.0], #1
         [1.0, 0.0], #2
-        [0.0, 0.0]  #3
+        [1.0, 0.0], #2
+        [0.0, 0.0], #3
+        [0.0, 1.0]  #0
     ], dtype=np.float32)
-
-    indices = np.array([
-        [0, 1, 2],
-        [2, 3, 0]
-    ], dtype=np.uint32)
 
     # Register components to entity1
     Registry().add_component(entity1, InfoComponent("e1"))
     Registry().add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
     Registry().add_component(entity1, LinkComponent(None))
-    Registry().add_component(entity1, RenderComponent([vertices, texture_coords], indices))
+    Registry().add_component(entity1, RenderComponent([vertices, texture_coords], None))
     Registry().add_component(entity1, MaterialComponent('M_Red_Textured'))
 
+    # Register components to entity2
     Registry().add_component(entity2, InfoComponent("e2"))
     Registry().add_component(entity2, TransformComponent(utils.vec(2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
     Registry().add_component(entity2, LinkComponent(entity1))
-    Registry().add_component(entity2, RenderComponent([vertices], indices))
+    Registry().add_component(entity2, RenderComponent([vertices], None))
     Registry().add_component(entity2, MaterialComponent('M_Red_Simple'))
 
+    # Register components to entity3
     Registry().add_component(entity3, InfoComponent("e3"))
     Registry().add_component(entity3, TransformComponent(utils.vec(-2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
     Registry().add_component(entity3, LinkComponent(entity1))
-    Registry().add_component(entity3, RenderComponent([vertices, texture_coords], indices))
+    Registry().add_component(entity3, RenderComponent([vertices, texture_coords], None))
     Registry().add_component(entity3, MaterialComponent('M_Blue'))
 
     # Create Register systems

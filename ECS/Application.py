@@ -1,6 +1,5 @@
 import OpenGL.GL as gl
-import sdl2
-import sdl2.ext
+import glfw
 
 class Application(object):
     def __new__(cls):
@@ -12,6 +11,8 @@ class Application(object):
             cls.instance.window_height = 1080
             cls.instance.context = None
             cls.instance.is_application_running = False
+            cls.instance.delta_time = 0.0
+            cls.instance.last_time = 0.0
         return cls.instance
     
     def get_window(cls):
@@ -24,46 +25,58 @@ class Application(object):
         cls.instance.is_application_running = is_running
     
     def create(cls, title, width, height, vsync = True):
-        sdl_not_initialised = sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_TIMER)
-        if sdl_not_initialised !=0:
-            print("SDL2 could not be initialised! SDL Error: ", sdl2.SDL_GetError())
-            exit(1)
-        
-        #setting OpenGL attributes for the GL state
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_PROFILE_MASK, sdl2.SDL_GL_CONTEXT_PROFILE_CORE)
+        # Initialize GLFW
+        if not glfw.init():
+            print("GLFW could not be initialized!")
+            exit(-1)
 
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 4)
-        sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 1)
+        # Set GLFW window hints
+        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
+        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 1)
 
         cls.instance.window_title = title
         cls.instance.window_width = width
         cls.instance.window_height = height
 
-        cls.instance.window = sdl2.SDL_CreateWindow(cls.instance.window_title.encode(), sdl2.SDL_WINDOWPOS_CENTERED, sdl2.SDL_WINDOWPOS_CENTERED, cls.instance.window_width, cls.instance.window_height, sdl2.SDL_WINDOW_OPENGL | sdl2.SDL_WINDOW_RESIZABLE | sdl2.SDL_WINDOW_SHOWN)
+        # Create a windowed mode window and its OpenGL context
+        cls.instance.window = glfw.create_window(width, height, title, None, None)
+        if not cls.instance.window:
+            print("Window could not be created!")
+            glfw.terminate()
+            exit(-1)
 
-        if cls.instance.window is None:
-            print("Window could not be created! SDL Error: ", sdl2.SDL_GetError())
-            exit(1)
+        # Make the window's context current
+        glfw.make_context_current(cls.instance.window)
 
-        cls.instance.context = sdl2.SDL_GL_CreateContext(cls.instance.window)
-        if cls.instance.context is None:
-            print("OpenGL Context could not be created! SDL Error: ", sdl2.SDL_GetError())
-            exit(1)
-
-        sdl2.SDL_GL_MakeCurrent(cls.instance.window, cls.instance.context)
-        if sdl2.SDL_GL_SetSwapInterval(1) < 0:
-            print("Warning: Unable to set VSync! SDL Error: ", sdl2.SDL_GetError())
-            exit(1)
-
-        #obtain the GL versioning system info
+        # Obtain the GL versioning system info
         gVersionLabel = f'OpenGL {gl.glGetString(gl.GL_VERSION).decode()} GLSL {gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION).decode()} Renderer {gl.glGetString(gl.GL_RENDERER).decode()}'
         print(gVersionLabel)
+
+    def calculate_time_step(cls):
+        time = glfw.get_time()
+        cls.instance.delta_time = time - cls.instance.last_time
+        cls.instance.last_time = time
+        return cls.instance.delta_time
+
+    def dispatch_main_loop(cls, main_loop):
+        while cls.instance.is_application_running:
+            # Calculate time
+            ts = cls.instance.calculate_time_step()
+
+            # Call main loop fuction
+            main_loop(ts)
+
+            # Swap front and back buffers
+            glfw.swap_buffers(cls.instance.window)
+
+            # Poll for and process events
+            glfw.poll_events()
 
     def quit(cls):
         cls.instance.is_application_running = False
 
     def clean(cls):
-        if (cls.instance.context and cls.instance.window is not None):
-            sdl2.SDL_GL_DeleteContext(cls.instance.context)
-            sdl2.SDL_DestroyWindow(cls.instance.window)
-            sdl2.SDL_Quit()
+        if (cls.instance.window is not None):
+            glfw.destroy_window(cls.instance.window)
+            glfw.terminate()

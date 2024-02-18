@@ -1,9 +1,6 @@
-from ECS.Application import Application
 from ECS.Utilities.TextureLib import TextureLib
-from ECS.Renderer.RenderCommand import RenderCommand, RendererAPI
 from ECS.Math import *
 
-import sdl2
 import OpenGL.GL as gl
 
 import ctypes
@@ -25,9 +22,6 @@ class Renderer2D(object):
         return cls.instance.initialized
     
     def initialize(cls):
-        RenderCommand.initialize(RendererAPI.OPENGL)
-        RenderCommand.draw()
-        RenderCommand.draw_indexed()
 
         # Initialize OpenGL
         gl.glEnable(gl.GL_DEPTH_TEST)
@@ -79,7 +73,7 @@ class Renderer2D(object):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
     def end_frame(cls):
-        sdl2.SDL_GL_SwapWindow(Application().get_window())
+        pass
     
     def draw(cls, model, render_data, material):
         # Bind shader program

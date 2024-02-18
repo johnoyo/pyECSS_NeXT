@@ -36,13 +36,13 @@ class System:
         else:
             print("on_update method not implemented")
 
-    def on_update_base(self):
+    def on_update_base(self, ts):
         # Check if the subclass has overridden the method
         if hasattr(self, 'on_update') and callable(getattr(self, 'on_update')):
             for entity, components in zip(self.filtered_entities, self.filtered_components):
                 if (len(components) == 1):
-                    self.on_update(entity, components[0])
+                    self.on_update(ts, entity, components[0])
                 else:
-                    self.on_update(entity, components)
+                    self.on_update(ts, entity, components)
         else:
             print("on_update method not implemented")
