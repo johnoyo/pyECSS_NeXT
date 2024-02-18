@@ -13,6 +13,8 @@ class Application(object):
             cls.instance.is_application_running = False
             cls.instance.delta_time = 0.0
             cls.instance.last_time = 0.0
+            cls.instance.timer = 0.0
+            cls.instance.frames = 0.0
         return cls.instance
     
     def get_window(cls):
@@ -57,21 +59,29 @@ class Application(object):
         time = glfw.get_time()
         cls.instance.delta_time = time - cls.instance.last_time
         cls.instance.last_time = time
-        return cls.instance.delta_time
 
     def dispatch_main_loop(cls, main_loop):
-        while cls.instance.is_application_running:
-            # Calculate time
-            ts = cls.instance.calculate_time_step()
+        while cls.instance.is_application_running:            
+            cls.instance.start_frame()
+            main_loop(cls.instance.delta_time)
+            cls.instance.end_frame()
 
-            # Call main loop fuction
-            main_loop(ts)
+    def start_frame(cls):
+        cls.instance.calculate_time_step()
 
-            # Swap front and back buffers
-            glfw.swap_buffers(cls.instance.window)
+    def end_frame(cls):
+        # Calculate fps
+        cls.instance.frames += 1
+        if glfw.get_time() - cls.instance.timer > 1.0:
+            glfw.set_window_title(cls.instance.window, f'[FPS: {cls.instance.frames}]')
+            cls.instance.timer += 1
+            cls.instance.frames = 0
 
-            # Poll for and process events
-            glfw.poll_events()
+        # Swap front and back buffers
+        glfw.swap_buffers(cls.instance.window)
+
+        # Poll for and process events
+        glfw.poll_events()
 
     def quit(cls):
         cls.instance.is_application_running = False
