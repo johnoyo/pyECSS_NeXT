@@ -163,7 +163,10 @@ def move_selected_entity(ts, entity1, entity2, entity3, entity4):
         selected_entity = entity4
 
     if glfw.get_key(Application().get_window(), glfw.KEY_G) == glfw.PRESS:
-        Registry().add_component(selected_entity, GravityComponent(5))
+        Registry().add_component(entity2, GravityComponent(5))
+
+    if glfw.get_key(Application().get_window(), glfw.KEY_SPACE) == glfw.PRESS:
+        Registry().remove_component(entity2, GravityComponent)
 
     if glfw.get_key(Application().get_window(), glfw.KEY_D) == glfw.PRESS:
         Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.5 * ts

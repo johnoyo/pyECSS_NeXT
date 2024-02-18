@@ -47,6 +47,22 @@ class Registry(object):
             system.filter_entity_components(entity, entity_components, cls.instance.component_arrays)
 
         return component
+    
+    def remove_component(cls, entity: Entity, component_type: type):
+        if cls.instance.has_component(entity, component_type) is False:
+            return
+        
+        state = False
+
+        # Update existing systems that operate on this component. (Usefull in runtime deletion of components)
+        for system in cls.instance.systems:
+            entity_components = Registry().get_entity_component_references(entity)
+            state = system.remove_entity_components(entity, component_type, entity_components, cls.instance.component_arrays)
+
+        # Update components array and entity components references
+        if state is True:
+            cls.instance.component_arrays[component_type].pop(cls.instance.entity_components[entity.id][component_type])
+            cls.instance.entity_components[entity.id].pop(component_type)
 
     def has_component(cls, entity: Entity, component_type: type):
         return component_type in cls.instance.entity_components.get(entity.id)

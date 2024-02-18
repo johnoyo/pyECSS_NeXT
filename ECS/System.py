@@ -39,6 +39,20 @@ class System:
             self.filtered_components.append(tuple(components_array[filter][entity_components[filter]] for filter in self.filters))
             self.filtered_entities.append(entity)
 
+    def remove_entity_components(self, entity, component, entity_components, components_array):
+        if entity not in self.filtered_entities:
+            return False
+
+        index = self.filtered_entities.index(entity)
+        
+        if not tuple(filter(lambda i: (type(i) == component), self.filtered_components[index])):
+            return False
+
+        self.filtered_entities.remove(entity)
+        self.filtered_components.pop(index)
+
+        return True
+
     def on_create_base(self):
         # Check if the subclass has overridden the method
         if hasattr(self, 'on_create') and callable(getattr(self, 'on_create')):
