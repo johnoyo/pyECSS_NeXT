@@ -52,15 +52,18 @@ class Registry(object):
         if cls.instance.has_component(entity, component_type) is False:
             return
         
-        state = False
+        is_component_maniplulated_by_system = False
+        unregister_component = False
 
         # Update existing systems that operate on this component. (Usefull in runtime deletion of components)
         for system in cls.instance.systems:
-            entity_components = Registry().get_entity_component_references(entity)
-            state = system.remove_entity_components(entity, component_type, entity_components, cls.instance.component_arrays)
+            is_component_maniplulated_by_system = system.remove_entity_components(entity, component_type)
 
-        # Update components array and entity components references
-        if state is True:
+            if is_component_maniplulated_by_system:
+                unregister_component = True
+
+        # Update component arrays and entity components references
+        if unregister_component:
             cls.instance.component_arrays[component_type].pop(cls.instance.entity_components[entity.id][component_type])
             cls.instance.entity_components[entity.id].pop(component_type)
 

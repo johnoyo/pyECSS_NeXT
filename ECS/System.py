@@ -39,7 +39,7 @@ class System:
             self.filtered_components.append(tuple(components_array[filter][entity_components[filter]] for filter in self.filters))
             self.filtered_entities.append(entity)
 
-    def remove_entity_components(self, entity, component, entity_components, components_array):
+    def remove_entity_components(self, entity, component):
         if entity not in self.filtered_entities:
             return False
 
