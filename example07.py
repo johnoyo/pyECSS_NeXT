@@ -1,10 +1,13 @@
 from ECS.BuiltInComponents import TransformComponent, LinkComponent, InfoComponent, RenderComponent, MaterialComponent
 from ECS.BuiltInSystems import TransformSystem, LinkSystem, RenderingSystem
 from ECS.Entity import Entity
-from ECS.System import SystemState
-from ECS.Registry import Registry
+from ECS.System import System
 from ECS.Renderer.Renderer2D import Renderer2D
+from ECS.Scene import Scene
+from ECS.SceneManager import SceneManager
 from ECS.Application import Application
+
+from ECS.OpenGLWindow import OpenGLWindow
 
 from ECS.Utilities.MaterialLib import MaterialLib, MaterialData
 from ECS.Utilities.ShaderLib import ShaderLib
@@ -20,13 +23,55 @@ import numpy as np
 Showcase of basic usage and API
 """
 
+class MovementComponent:
+    def __init__(self) -> None:
+        self.selected = False
+        self.speed = 0.5
+
+class MovementSystem(System):
+    """
+    The system responsible for moving.
+    """
+
+    def on_create(self, entity: Entity, components):
+        """
+        Gets called once in the first frame for every entity that the system operates on.
+        """
+        movement, transform, info = components
+
+    def on_update(self, ts, entity: Entity, components):
+        """
+        Gets called every frame for every entity that the system operates on.
+        """
+        movement, transform, info = components
+
+        movement.selected = False
+
+        if glfw.get_key(Application().get_window().get_handle(), glfw.KEY_1) == glfw.PRESS:
+            if info.tag == 'e1': movement.selected = True
+        elif glfw.get_key(Application().get_window().get_handle(), glfw.KEY_2) == glfw.PRESS:
+            if info.tag == 'e2': movement.selected = True
+        elif glfw.get_key(Application().get_window().get_handle(), glfw.KEY_3) == glfw.PRESS:
+            if info.tag == 'e3': movement.selected = True
+
+        if movement.selected:
+            if glfw.get_key(Application().get_window().get_handle(), glfw.KEY_D) == glfw.PRESS:
+                transform.translation[0] += movement.speed * ts
+            elif glfw.get_key(Application().get_window().get_handle(), glfw.KEY_A) == glfw.PRESS:
+                transform.translation[0] -= movement.speed * ts
+            if glfw.get_key(Application().get_window().get_handle(), glfw.KEY_W) == glfw.PRESS:
+                transform.translation[1] += movement.speed * ts
+            elif glfw.get_key(Application().get_window().get_handle(), glfw.KEY_S) == glfw.PRESS:
+                transform.translation[1] -= movement.speed * ts
+
+            if glfw.get_key(Application().get_window().get_handle(), glfw.KEY_SPACE) == glfw.PRESS:
+                SceneManager().change_scene()
+
+
 # Example Usage
 def main():
-    # Create Enroll entities to registry
-    entity1 = Registry().enroll_entity()
-    entity2 = Registry().enroll_entity()
-    entity3 = Registry().enroll_entity()
-    entity4 = Registry().enroll_entity()
+    scene = Scene()
+    new_scene = Scene()
 
     vertex_shader_code = """
     #version 330 core
@@ -118,9 +163,12 @@ def main():
     }
     """
 
-    Application().create('Hello World', 1280, 720, True)
+    # Create Enroll entities to registry
+    entity1 = scene.enroll_entity()
+    entity2 = scene.enroll_entity()
+    entity3 = scene.enroll_entity()
 
-    Renderer2D().initialize()
+    Application().create(OpenGLWindow('Hello World', 1280, 720, True))
 
     # Build textures
     TextureLib().build('dark_wood', 'dark_wood_texture.jpg')
@@ -156,76 +204,68 @@ def main():
     ], dtype=np.float32)
 
     # Register components to entity1
-    Registry().add_component(entity1, InfoComponent("e1"))
-    Registry().add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity1, LinkComponent(None))
-    Registry().add_component(entity1, RenderComponent([vertices, texture_coords], None))
-    Registry().add_component(entity1, MaterialComponent('M_Red_Textured'))
+    scene.add_component(entity1, InfoComponent("e1"))
+    scene.add_component(entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    scene.add_component(entity1, LinkComponent(None))
+    scene.add_component(entity1, RenderComponent([vertices, texture_coords], None))
+    scene.add_component(entity1, MaterialComponent('M_Red_Textured'))
+    scene.add_component(entity1, MovementComponent())
 
     # Register components to entity2
-    Registry().add_component(entity2, InfoComponent("e2"))
-    Registry().add_component(entity2, TransformComponent(utils.vec(2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity2, LinkComponent(entity1))
-    Registry().add_component(entity2, RenderComponent([vertices], None))
-    Registry().add_component(entity2, MaterialComponent('M_Red_Simple'))
+    scene.add_component(entity2, InfoComponent("e2"))
+    scene.add_component(entity2, TransformComponent(utils.vec(2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    scene.add_component(entity2, LinkComponent(entity1))
+    scene.add_component(entity2, RenderComponent([vertices], None))
+    scene.add_component(entity2, MaterialComponent('M_Red_Simple'))
+    scene.add_component(entity2, MovementComponent())
 
     # Register components to entity3
-    Registry().add_component(entity3, InfoComponent("e3"))
-    Registry().add_component(entity3, TransformComponent(utils.vec(-2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
-    Registry().add_component(entity3, LinkComponent(entity1))
-    Registry().add_component(entity3, RenderComponent([vertices, texture_coords], None))
-    Registry().add_component(entity3, MaterialComponent('M_Blue'))
+    scene.add_component(entity3, InfoComponent("e3"))
+    scene.add_component(entity3, TransformComponent(utils.vec(-2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    scene.add_component(entity3, LinkComponent(entity1))
+    scene.add_component(entity3, RenderComponent([vertices, texture_coords], None))
+    scene.add_component(entity3, MaterialComponent('M_Blue'))
+    scene.add_component(entity3, MovementComponent())
+
+    # Add scene to manager
+    SceneManager().add_scene(scene)
 
     # Create Register systems
-    Registry().register_system(TransformSystem([TransformComponent]))
-    Registry().register_system(LinkSystem([LinkComponent, TransformComponent]))
-    Registry().register_system(RenderingSystem([RenderComponent, MaterialComponent, TransformComponent]))
+    scene.register_system(TransformSystem([TransformComponent]))
+    scene.register_system(LinkSystem([LinkComponent, TransformComponent]))
+    scene.register_system(RenderingSystem([RenderComponent, MaterialComponent, TransformComponent]))
+    scene.register_system(MovementSystem([MovementComponent, TransformComponent, InfoComponent]))
 
-    # Initialize systems
-    Registry().start()
+    # Create Enroll entities to registry
+    new_entity1 = new_scene.enroll_entity()
+    new_entity2 = new_scene.enroll_entity()
 
-    # Define main loop
-    def main_loop(ts):
-        move_selected_entity(ts, entity1, entity2, entity3, entity4)
+    # Register components to entity1
+    new_scene.add_component(new_entity1, InfoComponent("e1"))
+    new_scene.add_component(new_entity1, TransformComponent(utils.vec(0, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    new_scene.add_component(new_entity1, LinkComponent(None))
+    new_scene.add_component(new_entity1, RenderComponent([vertices, texture_coords], None))
+    new_scene.add_component(new_entity1, MaterialComponent('M_Red_Textured'))
+    new_scene.add_component(new_entity1, MovementComponent())
 
-        Renderer2D().begin_frame()
-        Registry().update(ts)
-        Renderer2D().end_frame()
+    # Register components to entity2
+    new_scene.add_component(new_entity2, InfoComponent("e2"))
+    new_scene.add_component(new_entity2, TransformComponent(utils.vec(2, 0, 0), utils.vec(0, 0, 0), utils.vec(1, 1, 1)))
+    new_scene.add_component(new_entity2, LinkComponent(new_entity1))
+    new_scene.add_component(new_entity2, RenderComponent([vertices], None))
+    new_scene.add_component(new_entity2, MaterialComponent('M_Red_Simple'))
+    new_scene.add_component(new_entity2, MovementComponent())
 
-    # Dispatch game loop
-    Application().dispatch_main_loop(main_loop)
+    SceneManager().add_scene(new_scene)
 
-    Renderer2D().clean()
-    Application().clean()
+    # Create Register systems
+    new_scene.register_system(TransformSystem([TransformComponent]))
+    new_scene.register_system(LinkSystem([LinkComponent, TransformComponent]))
+    new_scene.register_system(RenderingSystem([RenderComponent, MaterialComponent, TransformComponent]))
+    new_scene.register_system(MovementSystem([MovementComponent, TransformComponent, InfoComponent]))
 
-def move_selected_entity(ts, entity1, entity2, entity3, entity4):
-    selected_entity = entity1
-
-    if glfw.get_key(Application().get_window(), glfw.KEY_ESCAPE) == glfw.PRESS:
-        Application().quit()
-
-    if glfw.get_key(Application().get_window(), glfw.KEY_1) == glfw.PRESS:
-        selected_entity = entity1
-    elif glfw.get_key(Application().get_window(), glfw.KEY_2) == glfw.PRESS:
-        selected_entity = entity2
-    elif glfw.get_key(Application().get_window(), glfw.KEY_3) == glfw.PRESS:
-        selected_entity = entity3
-    elif glfw.get_key(Application().get_window(), glfw.KEY_4) == glfw.PRESS:
-        selected_entity = entity4
-
-    if glfw.get_key(Application().get_window(), glfw.KEY_SPACE) == glfw.PRESS:
-        Registry().get_system(RenderingSystem).set_state(SystemState.PAUSE)
-    else:
-        Registry().get_system(RenderingSystem).set_state(SystemState.PLAY)
-
-    if glfw.get_key(Application().get_window(), glfw.KEY_D) == glfw.PRESS:
-        Registry().get_component(selected_entity, TransformComponent).translation[0] += 0.5 * ts
-    elif glfw.get_key(Application().get_window(), glfw.KEY_A) == glfw.PRESS:
-        Registry().get_component(selected_entity, TransformComponent).translation[0] -= 0.5 * ts
-    if glfw.get_key(Application().get_window(), glfw.KEY_W) == glfw.PRESS:
-        Registry().get_component(selected_entity, TransformComponent).translation[1] += 0.5 * ts
-    elif glfw.get_key(Application().get_window(), glfw.KEY_S) == glfw.PRESS:
-        Registry().get_component(selected_entity, TransformComponent).translation[1] -= 0.5 * ts
+    # Start application
+    Application().start()
 
 if __name__ == "__main__":
     main()

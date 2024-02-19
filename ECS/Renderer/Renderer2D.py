@@ -161,7 +161,8 @@ class Renderer2D(object):
         gl.glUseProgram(0)
 
     def clean(cls):
-        gl.glDeleteVertexArrays(1, (cls.instance.vao,))
-        gl.glDeleteBuffers(len(cls.instance.vbo), cls.instance.vbo)
-        gl.glDeleteBuffers(1, (cls.instance.ebo,))
+        #gl.glDeleteVertexArrays(1, (cls.instance.vao,))
+        #gl.glDeleteBuffers(len(cls.instance.vbo), cls.instance.vbo)
+        #gl.glDeleteBuffers(1, (cls.instance.ebo,))
+        pass
 

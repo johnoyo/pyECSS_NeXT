@@ -1,19 +1,6 @@
 import OpenGL.GL as gl
 from PIL import Image
 
-class Texture:
-    def create(self):
-        pass
-
-    def bind(self):
-        pass
-
-    def unbind(self):
-        pass
-
-    def release(self):
-        pass
-
 class TextureLib(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):

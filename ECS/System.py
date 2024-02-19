@@ -1,5 +1,3 @@
-from ECS.Registry import Registry
-
 from enum import Enum
 
 class SystemState(Enum):
@@ -12,19 +10,20 @@ class System:
         self.filters = filters
         self.filtered_components = []
         self.filtered_entities = []
-        self.state = SystemState.PLAY
-
-        components_array = Registry().get_components_array()
-
-        for entity in Registry().get_entities():
-            entity_components = Registry().get_entity_component_references(entity)
-            self.filter_entity_components(entity, entity_components, components_array)
+        self.state = SystemState.PLAY        
 
     def set_state(self, state: SystemState):
         self.state = state
 
     def get_state(self):
         return self.state
+    
+    def filter(self, scene):
+        components_array = scene.get_components_array()
+
+        for entity in scene.get_entities():
+            entity_components = scene.get_entity_component_references(entity)
+            self.filter_entity_components(entity, entity_components, components_array)
 
     def filter_entity_components(self, entity, entity_components, components_array):
         if (entity in self.filtered_entities):
@@ -76,3 +75,6 @@ class System:
                         self.on_update(ts, entity, components)
         else:
             print("on_update method not implemented")
+
+    def filtered_data(self):
+        return zip(self.filtered_entities, self.filtered_components)

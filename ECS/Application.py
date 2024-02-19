@@ -1,4 +1,6 @@
-import OpenGL.GL as gl
+from ECS.SceneManager import SceneManager
+from ECS.Renderer.Renderer2D import Renderer2D
+
 import glfw
 
 from enum import Enum
@@ -14,10 +16,6 @@ class Application(object):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Application, cls).__new__(cls)
             cls.instance.window = None
-            cls.instance.window_title = 'Title'
-            cls.instance.window_width = 1920
-            cls.instance.window_height = 1080
-            cls.instance.context = None
             cls.instance.is_application_running = False
             cls.instance.delta_time = 0.0
             cls.instance.last_time = 0.0
@@ -33,71 +31,45 @@ class Application(object):
     
     def set_is_running(cls, is_running):
         cls.instance.is_application_running = is_running
-    
-    def create(cls, title, width, height, vertical_sync = True, render_api = RenderAPI.OPENGL):
-        # Initialize GLFW
-        if not glfw.init():
-            print("GLFW could not be initialized!")
-            exit(-1)
 
-        # Set GLFW window hints
-        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 1)
+    def create(cls, window):
+        cls.instance.window = window
+        cls.instance.window.create()
+        Renderer2D().initialize()
 
-        cls.instance.window_title = title
-        cls.instance.window_width = width
-        cls.instance.window_height = height
+    def start(cls):
+        SceneManager().on_create()
 
-        # Create a windowed mode window and its OpenGL context
-        cls.instance.window = glfw.create_window(width, height, title, None, None)
-        if not cls.instance.window:
-            print("Window could not be created!")
-            glfw.terminate()
-            exit(-1)
+        def main_loop():
+            cls.instance.begin_frame()
+            Renderer2D().begin_frame()
+            SceneManager().on_update(cls.instance.delta_time)
+            Renderer2D().end_frame()
+            cls.instance.end_frame()
 
-        # Make the window's context current
-        glfw.make_context_current(cls.instance.window)
+        cls.instance.window.dispatch_main_loop(main_loop)
 
-        # Set vsync mode
-        glfw.swap_interval(1 if vertical_sync else 0)
+        cls.instance.clean()
 
-        # Obtain the GL versioning system info
-        gVersionLabel = f'OpenGL {gl.glGetString(gl.GL_VERSION).decode()} GLSL {gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION).decode()} Renderer {gl.glGetString(gl.GL_RENDERER).decode()}'
-        print(gVersionLabel)
-
-    def calculate_time_step(cls):
+    def begin_frame(cls):
         time = glfw.get_time()
         cls.instance.delta_time = time - cls.instance.last_time
         cls.instance.last_time = time
-
-    def dispatch_main_loop(cls, main_loop):
-        while cls.instance.is_application_running:            
-            cls.instance.start_frame()
-            main_loop(cls.instance.delta_time)
-            cls.instance.end_frame()
-
-    def start_frame(cls):
-        cls.instance.calculate_time_step()
 
     def end_frame(cls):
         # Calculate fps
         cls.instance.frames += 1
         if glfw.get_time() - cls.instance.timer > 1.0:
-            glfw.set_window_title(cls.instance.window, f'[FPS: {cls.instance.frames}]')
+            cls.instance.window.set_title(f'[FPS: {cls.instance.frames}]')
             cls.instance.timer += 1
             cls.instance.frames = 0
 
-        # Swap front and back buffers
-        glfw.swap_buffers(cls.instance.window)
-
-        # Poll for and process events
-        glfw.poll_events()
-
     def quit(cls):
         cls.instance.is_application_running = False
+        cls.instance.window.close()
 
     def clean(cls):
         if (cls.instance.window is not None):
-            glfw.destroy_window(cls.instance.window)
-            glfw.terminate()
+            cls.instance.window.destroy()
+
+        Renderer2D().clean()

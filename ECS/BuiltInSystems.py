@@ -1,6 +1,6 @@
+from ECS.SceneManager import SceneManager
 from ECS.System import System
 from ECS.Entity import Entity
-from ECS.Registry import Registry
 from ECS.Renderer.Renderer2D import Renderer2D
 from ECS.Utilities.MaterialLib import MaterialLib
 
@@ -71,10 +71,10 @@ class LinkSystem(System):
 
         if (link != None):
             if (link.parent != None):
-                parent_link = Registry().get_component(link.parent, LinkComponent)
+                parent_link = SceneManager().get_active_scene().get_component(link.parent, LinkComponent)
                 transform = self.get_world_space_transform(link.parent, parent_link)
 
-        return transform @ Registry().get_component(entity, TransformComponent).local_matrix
+        return transform @ SceneManager().get_active_scene().get_component(entity, TransformComponent).local_matrix
 
 class RenderingSystem(System):
     """
